@@ -1,0 +1,89 @@
+Ruby MultiMethods -
+
+Supports general dispatch using clojure style multi-methods.  This can be used
+for anything from basic function overloading to a function dispatch based on arbitrary complexity.
+
+The basic syntax starts off with something like this:
+
+class Square
+
+  defmulti :chicken, lambda { |args| args[1].class }
+  defmethod :chicken, Fixnum, instance_method(:chicken1)
+  defmethod :chicken, String, method(:chicken2)
+  defmethod :chicken, :default, lambda { puts 'in chicken default' }
+
+  def chicken1 *args
+    return :chicken1
+  end
+
+  def self.chicken2 *args
+    return :chicken2
+  end
+
+end
+
+Here, we are defining a new multi_method called 'chicken' with a general
+dispatch fn that examines the class of the first argument.  Any subsequent calls
+to our_square.chicken() will dispatch to the first defmethod encountered which matches this
+criteria.  
+
+Eg. chicken(3)     will trigger a call to an instance level method called chicken1
+    chicken("fun') will trigger a call to a class level method called chicken2
+
+Note that to parameters are passed to both the general dispatch fn and the
+individual defmethod using the varargs syntax.
+
+The last defmethod is marked as 'default' and will be called if no previously
+declared defmethods match. If no default exists and no other defmethod matches,
+an exception will be thrown. As you can see, the method which is ultimately called can be an
+instance method, class method or even a lambda.  
+
+If you just need a one-shot dispatch -perhaps to avoid an ugly conditional- and
+would prefer to avoid permanently polluting the class namespace, try someting
+like this:
+
+  class Square
+
+    def tuna1 *args
+      return :tuna1
+    end
+
+    def self.tuna2 *args
+      return :tuna2
+    end
+
+    def tuna_gateway *args
+      defmulti_local do  
+        defmulti :tuna, lambda{ |args| args[0] + args[1] }
+        defmethod :tuna, 2, self.class.instance_method(:tuna1)
+        defmethod :tuna, 4, self.class.method(:tuna2)
+        defmethod :tuna, :default, lambda{ |args| @default_fn = :tuna_default }
+
+        tuna(*args) 
+      end
+    end
+
+  end
+  
+The call to the tuna method within tuna_gateway will dispatch by adding it's
+first two arguments.  If they sum to 2, the tuna1 instance method is called.  If
+they sum to 4, the tuna2 class method is called. If they sum to neither 2 or 4,
+the default lamba will be called.  This just works like above with the only
+distinction being that  the tuna multimethod exists only inside of the defmulti_local
+block.  Once execution leaves said block, all the nescessary class
+meta-programming is unwound leaving no permanent trace of the defmulti.
+
+
+Finally, you can optionally provide a series of dispatch functions for each
+defmulti instead of a single 'general dispatch fn'.  Check this out:
+
+  defmulti :chicken
+  defmethod :chicken, lambda{ |args| args[0].class == Fixnum && args[1].class == Fixnum }, instance_method(:chicken1)
+  defmethod :chicken, lambda{ |args| args[0].class == String && args[1].class  == String }, method(:chicken2)
+  defmethod :chicken, :default, lambda { puts 'in chicken default' }
+
+Notice that no generald dispatch mechanism is provided by the defmulti.
+Instead, each defmethod declares its own predicate.  The first defmethod who's
+predicate returns true becomes the target of the dispatch.
+Eg. our_square.chicken( 'red', 'blue') would dispatch to the chicken2 class
+method because its first two parameters are Strings.
