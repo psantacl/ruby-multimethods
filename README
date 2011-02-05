@@ -7,11 +7,6 @@ The basic syntax starts off with something like this:
 
 class Square
 
-  defmulti :chicken, lambda { |args| args[1].class }
-  defmethod :chicken, Fixnum, instance_method(:chicken1)
-  defmethod :chicken, String, method(:chicken2)
-  defmethod :chicken, :default, lambda { puts 'in chicken default' }
-
   def chicken1 *args
     return :chicken1
   end
@@ -20,15 +15,20 @@ class Square
     return :chicken2
   end
 
+  defmulti :chicken, lambda { |args| args[1].class }
+  defmethod :chicken, Fixnum, instance_method(:chicken1)
+  defmethod :chicken, String, method(:chicken2)
+  defmethod :chicken, :default, lambda { puts 'in chicken default' }
+
 end
 
-Here, we are defining a new multi_method called 'chicken' with a general
+Here, we are defining a new instance, multi_method called 'chicken' with a general
 dispatch fn that examines the class of the first argument.  Any subsequent calls
 to our_square.chicken() will dispatch to the first defmethod encountered which matches this
 criteria.  
 
-Eg. chicken(3)     will trigger a call to an instance level method called chicken1
-    chicken("fun') will trigger a call to a class level method called chicken2
+Eg. some_instance_of_square.chicken(3)     will trigger a call to an instance level method called chicken1
+    some_instance_of_square.chicken("fun') will trigger a call to a class level method called chicken2
 
 Note that to parameters are passed to both the general dispatch fn and the
 individual defmethod using the varargs syntax.
