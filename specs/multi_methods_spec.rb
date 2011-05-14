@@ -1,5 +1,5 @@
 require File.dirname(__FILE__) + '/square'
-require File.dirname(__FILE__)  + '/../multi_methods'
+require File.dirname(__FILE__)  + '/../lib/multi_methods'
 
 
 describe "hacking Square with multi_methods" do
@@ -204,6 +204,22 @@ describe "hacking Square with multi_methods" do
         @our_square.dispatch_fn.should be_nil 
         @our_square.class.dispatch_fn.should == :chicken_default
       end
+  end
+
+  describe "default method" do
+    it "should only be called if no other methods match" do
+      @our_square = Square.new
+      @our_square.class.instance_eval do
+        defmulti :puppy, lambda { |args| args[0] }
+        defmethod :puppy, 1, lambda { |args| :one }
+        defmethod :puppy, :default, lambda { |args| :default }
+        defmethod :puppy, 2, lambda { |args| :two }
+      end
+
+      result = @our_square.puppy 2
+      result.should == :two
+      
+    end
   end
 
 end

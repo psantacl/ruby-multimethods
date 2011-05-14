@@ -16,28 +16,31 @@ module MultiMethods
         create_method( method_name ) do |*args|
           dispatch_table = self.class.instance_variable_get( "@" + method_name.to_s )
 
+          destination_fn = nil
+          default_fn = nil
           dispatch_table.each do |m|
             predicate = if m.keys.first.respond_to? :call
                           raise "Dispatch method already defined by defmulti" if default_dispatch_fn
                           m.keys.first
                         elsif  m.keys.first == :default
-                          :default
+                          default_fn = m.values.first
+                          lambda { |args| false }
                         else
                           lambda { |args| return default_dispatch_fn.call(args) == m.keys.first }
                         end
 
-            destination_fn = m.values.first
-
-            if predicate == :default  || predicate.call(args)
-              if destination_fn.is_a? UnboundMethod
-                break destination_fn.bind( self ).call(args)
-              else
-                break destination_fn.call(args)
-              end
-              break
-            end
-            raise "No matching dispatcher function found" if dispatch_table.last == m
+            destination_fn = m.values.first if predicate.call(args)
           end
+
+          destination_fn ||= default_fn
+          raise "No matching dispatcher function found" unless destination_fn 
+          
+          if destination_fn.is_a? UnboundMethod
+            destination_fn.bind(self).call(args)
+          else
+            destination_fn.call(args)
+          end
+
         end
       end
     
