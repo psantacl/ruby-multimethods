@@ -55,7 +55,7 @@ module MultiMethods
     module InstanceMethods
 
       def defmulti_local &block
-        instance_eval &block 
+        dispatch_return = instance_eval &block 
 
         #clean up after evaling block
         instance_eval do 
@@ -64,6 +64,8 @@ module MultiMethods
           self.class.send(:remove_instance_variable,  ('@' + method_name.to_s).to_sym )
           self.send( :remove_instance_variable, :@added_multi_method )
         end
+
+        dispatch_return 
       end
 
       def defmulti method_name, default_dispatch_fn = nil

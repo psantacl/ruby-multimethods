@@ -15,6 +15,7 @@ describe "hacking Square with multi_methods" do
 
         def tuna1 *args
           @dispatch_fn = :tuna1
+          return 69
         end
 
         def tuna_gateway *args
@@ -33,7 +34,7 @@ describe "hacking Square with multi_methods" do
     end
     
     it "should dispatch to tuna1 when the sum of the first to parameters is 2" do
-      @our_square.tuna_gateway(1,1)
+      secret = @our_square.tuna_gateway(1,1)
       @our_square.dispatch_fn.should == :tuna1
       @our_square.class.dispatch_fn.should == nil
     end
@@ -50,6 +51,11 @@ describe "hacking Square with multi_methods" do
       @our_square.class.instance_variables.should_not include '@tuna'
       @our_square.class.instance_variables.should_not include '@added_multi_method'
     end 
+
+    it "should return the value of whatever fn it dispatched to" do
+      secret = @our_square.tuna_gateway(1,1)
+      secret.should == 69
+    end
   end
 
   describe "causes of exceptions" do
