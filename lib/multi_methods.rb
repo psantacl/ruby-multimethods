@@ -18,6 +18,7 @@ module MultiMethods
 
           destination_fn = nil
           default_fn = nil
+          default_dispatch_result = default_dispatch_fn.call(args)  if default_dispatch_fn 
           dispatch_table.each do |m|
             predicate = if m.keys.first.respond_to? :call
                           raise "Dispatch method already defined by defmulti" if default_dispatch_fn
@@ -26,7 +27,7 @@ module MultiMethods
                           default_fn = m.values.first
                           lambda { |args| false }
                         else
-                          lambda { |args| return default_dispatch_fn.call(args) == m.keys.first }
+                          lambda { |args| return default_dispatch_result == m.keys.first }
                         end
 
             destination_fn = m.values.first if predicate.call(args)
